@@ -23,7 +23,7 @@ def arg():
     parser.add_argument('--paradigm', default="session", choices=['ind'], help="Please enter ind or not")
 
     # Net
-    parser.add_argument('--net', required=True, help='Please enter your name of net.')
+    parser.add_argument('--net', type=str, required=True, help='Please enter your name of net.')
 
     # Data
     parser.add_argument('--dataset', default='bcic4_2a')
@@ -62,6 +62,7 @@ def arg():
 
     parser.add_argument('--extractor', default="EEGNet")
     parser.add_argument('--gaussian', type=bool, default=True) #Gaussian noise 사용 유무
+    parser.add_argument('--masking', type=bool, default=False) # random masking 사용 유무
     parser.add_argument('--fgsm', type=bool, default=True)
     # Parsing
     args = parser.parse_args()

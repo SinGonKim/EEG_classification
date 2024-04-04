@@ -44,7 +44,7 @@ class Solver:
             if self.args.fgsm:
                 # Step 2: 계산된 그래디언트의 부호를 사용하여 입력 데이터 수정
                 inputs_grad = inputs.grad.data
-                perturbed_inputs = fgsm_attack(inputs, 0.001, inputs_grad)
+                perturbed_inputs = fgsm_attack(inputs, 0.0011, inputs_grad)
 
                 # 적대적 예제에 대한 예측 및 손실 계산
                 outputs =self.net(perturbed_inputs)

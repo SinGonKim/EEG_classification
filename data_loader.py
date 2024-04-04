@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 import random
 import torch.nn as nn
 
-
 def add_gaussian_noise(data, mean=0.0, std=0.1):
     """
     EEG 데이터에 가우시안 노이즈 추가
@@ -17,15 +16,60 @@ def add_gaussian_noise(data, mean=0.0, std=0.1):
     noise = torch.randn(data.size()) * std + mean
     return data + noise
 
+
+def random_masking(X, mask_size):
+    """
+    X의 너비(시간) 차원에서 랜덤하게 마스킹합니다.
+    mask_size: 마스킹할 너비(시간)의 크기
+    """
+    _, _, _, width = X.shape
+    mask = torch.ones_like(X)
+
+    for _ in range(mask_size):
+        batch_indices = torch.randint(0, X.shape[0], (1,))
+        channel_indices = torch.randint(0, X.shape[1], (1,))
+        height_indices = torch.randint(0, X.shape[2], (1,))
+        time_indices = torch.randint(0, width, (1,))
+        mask[batch_indices, channel_indices, height_indices, time_indices] = 0
+    return X * mask  # 원본 데이터에 마스크 적용
+
+
 class CustomDataset(Dataset):
     def __init__(self, args):
         self.args = args
         self.load_data()
         self.torch_form()
+
+        if self.args.masking:
+            self.masking = random_masking(self.X, mask_size = 100)
+            self.X = torch.cat([self.X, self.masking])
+            self.y = torch.cat([self.y, self.y])
+
+
         if self.args.gaussian:
-            gaussian_noise = add_gaussian_noise(self.X,mean=0, std=0.1)
-            self.X = torch.cat([self.X, gaussian_noise], dim=0)
-            self.y = torch.cat([self.y, self.y], dim=0)
+            self.gaussian_noise1 = add_gaussian_noise(self.X,mean=0, std=0.10)
+            self.gaussian_noise2 = add_gaussian_noise(self.X, mean=0, std=0.05)
+
+
+        if self.args.masking:
+            self.X = torch.cat([self.X, self.masking])
+            self.Y = torch.cat([self.y, self.y])
+
+        if self.args.gaussian:
+            self.X = torch.cat([self.X, self.gaussian_noise1, self.gaussian_noise2], dim=0)
+            try:
+                self.y = torch.cat([self.Y, self.y, self.y], dim=0)
+            except AttributeError:
+                self.y = torch.cat([self.y, self.y, self.y], dim=0)
+
+
+        # 데이터의 길이만큼 인덱스를 생성하고 섞음
+        indices = torch.randperm(self.X.size(0))
+
+        # 생성한 인덱스를 사용해 self.X와 self.y의 순서를 재배열하여 쌍을 유지
+        self.X = self.X[indices]
+        self.y = self.y[indices]
+
     def load_data(self):
         s = self.args.train_subject[0]
         if self.args.phase == 'train':
